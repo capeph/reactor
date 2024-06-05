@@ -1,2 +1,2 @@
 # reactor
-A reactive framework based on Aaron
+A reactive framework based on Aeron
