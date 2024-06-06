@@ -1,3 +1,6 @@
+/*
+ * Copyright 2024 Peter Danielsson
+ */
 package org.capeph.processor;
 
 import org.capeph.annotations.ReactorMessage;
@@ -9,7 +12,6 @@ import javax.annotation.processing.SupportedSourceVersion;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.*;
 import javax.lang.model.type.TypeMirror;
-import javax.tools.Diagnostic.Kind;
 import javax.tools.JavaFileObject;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -101,11 +103,11 @@ public class MessageProcessor extends AbstractProcessor {
                 BuildCodec(basePackage);
             }
             else {
-                processingEnv.getMessager().printNote("Nothing to process in " + roundEnv.toString());
+                processingEnv.getMessager().printNote("Nothing to process in " + roundEnv);
             }
         }
         catch (IOException e) {
-            processingEnv.getMessager().printError("Failed to write codec file(s): " +  e.getMessage());;
+            processingEnv.getMessager().printError("Failed to write codec file(s): " +  e.getMessage());
             return false;
         }
         return true;
@@ -315,9 +317,8 @@ public class MessageProcessor extends AbstractProcessor {
                         stringFields.add(field.getKey());
                     }
                 }
-                default -> {
+                default ->
                     throw new IllegalStateException("Got unsupported type: " + field.getValue());
-                }
             }
         }
         writer.print("   private int ");

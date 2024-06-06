@@ -1,3 +1,6 @@
+/*
+ * Copyright 2024 Peter Danielsson
+ */
 package org.capeph.lookup.dto;
 
 import io.swagger.v3.oas.annotations.Parameter;

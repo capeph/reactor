@@ -1,3 +1,6 @@
+/*
+ * Copyright 2024 Peter Danielsson
+ */
 package org.capeph.reactor;
 
 import java.util.ArrayList;
@@ -7,9 +10,9 @@ import java.util.Map;
 
 public class MessagePool {
 
-    private int initialPoolSize = 8;
+    private final int initialPoolSize = 8;
 
-    private Map<Class<? extends ReusableMessage>, List<ReusableMessage>> templates = new HashMap<>();
+    private final Map<Class<? extends ReusableMessage>, List<ReusableMessage>> templates = new HashMap<>();
 
     private List<ReusableMessage> createMessagePool(Class<? extends ReusableMessage> msgClazz) {
         List<ReusableMessage> pool = new ArrayList<>();

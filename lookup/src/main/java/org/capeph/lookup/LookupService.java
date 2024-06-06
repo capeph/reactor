@@ -1,3 +1,6 @@
+/*
+ * Copyright 2024 Peter Danielsson
+ */
 package org.capeph.lookup;
 
 import io.swagger.v3.oas.models.OpenAPI;

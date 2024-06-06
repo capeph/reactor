@@ -1,5 +1,7 @@
+/*
+ * Copyright 2024 Peter Danielsson
+ */
 package org.capeph.lookup.store;
-
 
 import org.capeph.lookup.dto.ReactorInfo;
 import org.springframework.stereotype.Component;

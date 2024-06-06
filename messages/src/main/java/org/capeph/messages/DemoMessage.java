@@ -1,3 +1,6 @@
+/*
+ * Copyright 2024 Peter Danielsson
+ */
 package org.capeph.messages;
 
 import org.capeph.annotations.ReactorMessage;

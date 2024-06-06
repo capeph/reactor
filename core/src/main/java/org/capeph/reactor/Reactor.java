@@ -1,3 +1,6 @@
+/*
+ * Copyright 2024 Peter Danielsson
+ */
 package org.capeph.reactor;
 
 
@@ -40,13 +43,6 @@ import static java.net.http.HttpRequest.BodyPublishers.ofString;
 
 public class Reactor implements Agent {
 
-
-    //TODO:
-     // - register name and host
-    // - register callback
-    // - send message to other channel
-    // - set up listener
-
     private final Logger log = LogManager.getLogger(Reactor.class);
     MediaDriver driver;
     Aeron aeron;
@@ -83,9 +79,6 @@ public class Reactor implements Agent {
         aeron = Aeron.connect();
         this.codec = codec == null ? new Codec() :  codec;
 
-        // register name and local host name / IP
-        // query name to get unique connection details
-        // build aeron url
         ReactorInfo info = register(name, endpoint);
         localUri = buildUri(endpoint);
         streamId = info.getStreamid();
@@ -188,8 +181,7 @@ public class Reactor implements Agent {
         BufferClaim bufferClaim = new BufferClaim();  // can be reused!
 
         int encodedLength = codec.encodedLength(message);
-        long result;
-        while ((result = publication.tryClaim(encodedLength, bufferClaim)) <= 0L) {
+        while (publication.tryClaim(encodedLength, bufferClaim) <= 0L) {
             reactorIdleStrategy.idle();  // TODO: add timeout
         }
         try {
@@ -257,8 +249,7 @@ public class Reactor implements Agent {
 
 
     public ReusableMessage getMessage(DirectBuffer buffer, int offset) {
-        ReusableMessage message = codec.decode(buffer, offset, messagePool);
-        return message;
+        return codec.decode(buffer, offset, messagePool);
     }
 
 

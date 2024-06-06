@@ -1,3 +1,6 @@
+/*
+ * Copyright 2024 Peter Danielsson
+ */
 package org.capeph.reactor;
 
 import org.agrona.DirectBuffer;
@@ -11,11 +14,11 @@ public class Header {
 
     /**
      * Encodes message header to buffer, returns new offset
-     * @param buffer
-     * @param offset
-     * @param type
-     * @param version
-     * @return
+     * @param buffer target buffer
+     * @param offset where in buffer to write
+     * @param type message type
+     * @param version codec version
+     * @return new offset
      */
     public static int writeHeader(MutableDirectBuffer buffer, int offset, int type, int version) {
         buffer.putInt(offset, type);

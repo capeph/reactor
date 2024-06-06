@@ -1,3 +1,6 @@
+/*
+ * Copyright 2024 Peter Danielsson
+ */
 package org.capeph.annotations;
 
 import java.lang.annotation.ElementType;
