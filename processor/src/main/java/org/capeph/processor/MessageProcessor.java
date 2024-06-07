@@ -92,9 +92,13 @@ public class MessageProcessor extends AbstractProcessor {
                 for (Element enclosed : element.getEnclosedElements()) {
                     recordElement(enclosed, api);
                 }
+                int id = element.getAnnotation(ReactorMessage.class).id();
+                if (id < 0) {
+                    throw new IllegalArgumentException("Message id must be a positive integer");
+                }
                 verifyMessage(api, element);
                 messages.add(api);
-                api.setId(messages.size());
+                api.setId(id == 0 ? -messages.size() : id);
             }
         }
         try {

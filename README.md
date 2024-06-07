@@ -14,14 +14,21 @@ Licence
 The code is currently licenced under the GPLv3 Licence 
 
 
-TODO:
+Usage:
 
-- remove unneeded stuff and trim the build system
-- add configuration options instead of hardcoding everything in the code
-- add more unit tests,
-- allow distribution of the config via the lookup host
-- add some stress tests and profile the code
-- allow more complex datatypes in the messages
-- use a code generator like JavaPOET
-- set up some docker based tests
+Messages should be defined as plain POJOS with getters and setters
+(getters should be prefixed with 'get', or 'is' for booleans.
+setters should be prefixe with 'set')
+The class should then be annotated with @ReactorMessage
+An optional id parameter can be used to signal which value should 
+be used to flag the typ of message when they are encoded.
+
+The components that signal and reacts to incoming signals are instances
+of the 'Reactor' class. The method 'signal()' is used to send a message
+to another Reactor instance. To allow the Reactor instance to react to 
+incoming signals the method 'react()' sets up a callback method for an
+incoming message.
+It is possible to register multiple callback methods. These will be called
+in the order they were registered.
+
 

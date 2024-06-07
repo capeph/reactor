@@ -4,8 +4,6 @@
 package org.capeph.reactor;
 
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.aeron.Aeron;
 import io.aeron.FragmentAssembler;
 import io.aeron.Publication;
@@ -26,12 +24,7 @@ import org.capeph.messages.codec.Codec;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.HttpURLConnection;
-import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -39,7 +32,6 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
-import static java.net.http.HttpRequest.BodyPublishers.ofString;
 
 public class Reactor implements Agent {
 
@@ -48,7 +40,6 @@ public class Reactor implements Agent {
     Aeron aeron;
     private final String localUri;
     private final int streamId;
-    private final String lookupUrl;
     private final String reactorDescription;
     private final Subscription subscription;
     private final Map<String, Publication> publications = new HashMap<>();
@@ -59,6 +50,7 @@ public class Reactor implements Agent {
     private final Consumer<String> logConsumer = (s) -> log.info("Media Driver check: {}", s);
     private final IdleStrategy reactorIdleStrategy;
     private final ICodec codec;
+    private final Registrar registrar;
     /**
      * @param name      name of the reactor. used to look up
      * @param endpoint  the local endpoint
@@ -70,7 +62,7 @@ public class Reactor implements Agent {
      */
     public Reactor(String name, String endpoint, String lookupUrl, boolean inProcess, ICodec codec) throws URISyntaxException, IOException, InterruptedException {
         this.reactorDescription = "Reactor(" + name + "," + endpoint +")";
-        this.lookupUrl = lookupUrl;
+        registrar = new Registrar(lookupUrl);
         if (!verifyMediaDriver()) {
             throw new IllegalStateException("Could not get or start a media driver");
         }
@@ -79,7 +71,7 @@ public class Reactor implements Agent {
         aeron = Aeron.connect();
         this.codec = codec == null ? new Codec() :  codec;
 
-        ReactorInfo info = register(name, endpoint);
+        ReactorInfo info = registrar.register(name, endpoint);
         localUri = buildUri(endpoint);
         streamId = info.getStreamid();
         subscription = aeron.addSubscription(localUri, streamId);
@@ -97,55 +89,6 @@ public class Reactor implements Agent {
     private String buildUri(String endpoint) {
         return "aeron:udp?endpoint=" + endpoint;
     }
-
-    public ReactorInfo register(String name, String endpoint)  {
-        try (HttpClient httpClient = HttpClient.newHttpClient()) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            // TODO: move DTOs to separate module
-            String body = objectMapper.writeValueAsString(new ReactorInfo(name, endpoint, 0));
-            HttpRequest update = HttpRequest.newBuilder()
-                    .uri(new URI(lookupUrl + "/lookup"))  //TODO:  make path a constant
-                    .header("Content-Type", "application/json")
-                    .header("Accept", "application/json")
-                    .POST(ofString(body))
-                    .build();
-            HttpResponse<String> response = httpClient.send(update, HttpResponse.BodyHandlers.ofString());
-            if (response.statusCode() != HttpURLConnection.HTTP_OK) {
-                throw new IllegalStateException("lookup endpoint returned " + response.statusCode());
-            }
-            String jsonData = response.body();
-
-            return objectMapper.readValue(jsonData,
-                    new TypeReference<ReactorInfo>() {});
-
-        }
-        catch (Exception e) {
-            log.error("Registration of reactor failed {} ", e.getMessage());
-        }
-        throw new IllegalStateException("Failed to set up reactor");
-    }
-
-    public ReactorInfo lookupReactor(String name) {
-        try(HttpClient httpClient = HttpClient.newHttpClient()) {
-            HttpRequest query = HttpRequest.newBuilder()
-                    .uri(new URI(lookupUrl + "/lookup/" + name))
-                    .header("Accept", "application/json")
-                    .GET()
-                    .build();
-            HttpResponse<String> response = httpClient.send(query, HttpResponse.BodyHandlers.ofString());
-            if (response.statusCode() != HttpURLConnection.HTTP_OK) {
-                throw new IllegalStateException("lookup endpoint returned " + response.statusCode());
-            }
-            String jsonData = response.body();
-            ObjectMapper objectMapper = new ObjectMapper();
-            return objectMapper.readValue(jsonData,
-                    new TypeReference<ReactorInfo>() {});
-
-        } catch (Exception e) {
-            throw new IllegalStateException("Lookup failed:", e);
-        }
-    }
-
 
 
     public boolean verifyMediaDriver() {
@@ -169,7 +112,7 @@ public class Reactor implements Agent {
 
     private Publication getPublication(String targetReactor) {
         return publications.computeIfAbsent(targetReactor, target -> {
-            ReactorInfo info = lookupReactor(target);
+            ReactorInfo info = registrar.lookupReactor(target);
             String channel = buildUri(info.getEndpoint());
             return aeron.addExclusivePublication(channel, info.getStreamid());
         });
