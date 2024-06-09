@@ -41,8 +41,7 @@ public class Registrar {
             }
             String jsonData = response.body();
 
-            return objectMapper.readValue(jsonData,
-                    new TypeReference<ReactorInfo>() {});
+            return objectMapper.readValue(jsonData, new TypeReference<>() {});
 
         }
         catch (Exception e) {
@@ -64,8 +63,7 @@ public class Registrar {
             }
             String jsonData = response.body();
             ObjectMapper objectMapper = new ObjectMapper();
-            return objectMapper.readValue(jsonData,
-                    new TypeReference<ReactorInfo>() {});
+            return objectMapper.readValue(jsonData, new TypeReference<>() {});
 
         } catch (Exception e) {
             throw new IllegalStateException("Lookup failed:", e);

@@ -5,14 +5,10 @@ package org.capeph.reactor;
 
 
 import io.aeron.Aeron;
-import io.aeron.FragmentAssembler;
 import io.aeron.Publication;
 import io.aeron.Subscription;
 import io.aeron.driver.MediaDriver;
 import io.aeron.logbuffer.BufferClaim;
-import io.aeron.logbuffer.FragmentHandler;
-
-import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.Agent;
 import org.agrona.concurrent.AgentRunner;
@@ -23,62 +19,48 @@ import org.capeph.lookup.dto.ReactorInfo;
 import org.capeph.messages.codec.Codec;
 
 import java.io.File;
-import java.io.IOException;
-import java.net.URISyntaxException;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 
-public class Reactor implements Agent {
+public class Reactor {
 
     private final Logger log = LogManager.getLogger(Reactor.class);
     MediaDriver driver;
     Aeron aeron;
-    private final String localUri;
-    private final int streamId;
-    private final String reactorDescription;
-    private final Subscription subscription;
     private final Map<String, Publication> publications = new HashMap<>();
     private final MessagePool messagePool = new MessagePool();
-
-    private final Map<Class<? extends ReusableMessage>, List<Consumer<ReusableMessage>>> reactions = new HashMap<>();
-    private final ExecutorService messageHandler;
+    private final Dispatcher dispatcher;
     private final Consumer<String> logConsumer = (s) -> log.info("Media Driver check: {}", s);
     private final IdleStrategy reactorIdleStrategy;
     private final ICodec codec;
     private final Registrar registrar;
+
     /**
      * @param name      name of the reactor. used to look up
      * @param endpoint  the local endpoint
      * @param lookupUrl url used for looking up other reactors
-     * @param codec optional codec class
-     * @throws URISyntaxException
-     * @throws IOException
-     * @throws InterruptedException
+     * @param overrideCodec optional codec class
      */
-    public Reactor(String name, String endpoint, String lookupUrl, boolean inProcess, ICodec codec) throws URISyntaxException, IOException, InterruptedException {
-        this.reactorDescription = "Reactor(" + name + "," + endpoint +")";
+    public Reactor(String name, String endpoint, String lookupUrl, boolean inProcess, ICodec overrideCodec)  {
         registrar = new Registrar(lookupUrl);
         if (!verifyMediaDriver()) {
             throw new IllegalStateException("Could not get or start a media driver");
         }
-        messageHandler = inProcess ? null : Executors.newSingleThreadExecutor();
         log.info("Media driver is running at {}", MediaDriver.Context.getAeronDirectoryName());
+
+        dispatcher = new Dispatcher(inProcess);
+        this.codec = overrideCodec == null ? new Codec() :  overrideCodec;
         aeron = Aeron.connect();
-        this.codec = codec == null ? new Codec() :  codec;
 
         ReactorInfo info = registrar.register(name, endpoint);
-        localUri = buildUri(endpoint);
-        streamId = info.getStreamid();
-        subscription = aeron.addSubscription(localUri, streamId);
+        Subscription subscription = aeron.addSubscription(buildUri(endpoint), info.getStreamid());
 
         reactorIdleStrategy = aeron.context().idleStrategy();
         // start agent  TODO: setup errorCounter
-        final var runner = new AgentRunner(reactorIdleStrategy, this::errorHandler,null, this);
+        String description = "Reactor(" + name + "," + endpoint + ")";
+        Agent agent = new ReactorAgent(subscription, codec, messagePool, dispatcher, description);
+        final var runner = new AgentRunner(reactorIdleStrategy, this::errorHandler,null, agent);
         AgentRunner.startOnThread(runner);
     }
 
@@ -89,7 +71,6 @@ public class Reactor implements Agent {
     private String buildUri(String endpoint) {
         return "aeron:udp?endpoint=" + endpoint;
     }
-
 
     public boolean verifyMediaDriver() {
         // get the directory name
@@ -118,7 +99,7 @@ public class Reactor implements Agent {
         });
     }
 
-    public <T extends ReusableMessage> boolean signal(T message, String targetReactor) {
+    public  boolean signal(ReusableMessage message, String targetReactor) {
 
         Publication publication = getPublication(targetReactor);
         BufferClaim bufferClaim = new BufferClaim();  // can be reused!
@@ -136,73 +117,26 @@ public class Reactor implements Agent {
             return true;
         }
         catch (Exception e) {
+            log.error("Sending message threw exception ", e);
             bufferClaim.abort();
         }
-
         return false;
     }
 
 
     /**
      * register a message handler for a message type
-     * @param messageClass
-     * @param messageConsumer
-     * @param <T>
+     * @param messageClass class of message
+     * @param messageConsumer handler for message type
      */
-    public <T extends ReusableMessage> void react(Class<? extends ReusableMessage> messageClass, Consumer<T> messageConsumer) {
-        List<Consumer<ReusableMessage>> consumers = reactions.computeIfAbsent(messageClass, r -> new ArrayList<>());
-        consumers.add((Consumer<ReusableMessage>) messageConsumer);
-    }
-
-    private void reactTo(ReusableMessage message) {
-        List<Consumer<ReusableMessage>> consumers = reactions.get(message.getClass());
-        try {
-            if (consumers != null) {
-                if (messageHandler == null) {
-                    consumers.forEach(c -> c.accept(message));
-                } else {
-                    consumers.forEach(c -> messageHandler.submit(() -> c.accept(message)));
-                }
-            } else {
-                throw new IllegalStateException("No handler for message of type " + message.getClass());
-            }
-        } catch (Throwable th) {
-            log.error("Problem processing message {}", message, th);
-        }
-    }
-
-    private MessagePool getMessagePool() {
-        return messagePool;
-    }
-
-    FragmentAssembler assembler = new FragmentAssembler(new MessageHandler(this));
-
-
-    private record MessageHandler(Reactor reactor) implements FragmentHandler {
-
-        @Override
-        public void onFragment(DirectBuffer buffer, int offset, int length, io.aeron.logbuffer.Header header) {
-            ReusableMessage msg = reactor.getMessage(buffer, offset);
-            if (msg != null) {
-                reactor.reactTo(msg);
-                reactor.getMessagePool().reuseMessage(msg);
-            }
-        }
+    public void react(Class<? extends ReusableMessage> messageClass, Consumer<ReusableMessage> messageConsumer) {
+        messagePool.addMessagePool(messageClass);
+        dispatcher.addMessageHandler(messageClass, messageConsumer);
     }
 
 
-    public ReusableMessage getMessage(DirectBuffer buffer, int offset) {
-        return codec.decode(buffer, offset, messagePool);
-    }
 
 
-    @Override
-    public int doWork() throws Exception {
-        return subscription.poll(assembler, 100);
-    }
 
-    @Override
-    public String roleName() {
-        return reactorDescription;
-    }
+
 }
