@@ -1,5 +1,6 @@
 package org.capeph.reactor;
 
+import org.agrona.collections.Object2ObjectHashMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -11,11 +12,10 @@ import java.util.function.Consumer;
 public class Dispatcher implements Consumer<ReusableMessage> {
 
     private final Logger log = LogManager.getLogger(Dispatcher.class);
-    // TODO: better map.. Agrona?
-    private final Map<Class<? extends ReusableMessage>, List<Consumer<ReusableMessage>>> reactions = new HashMap<>();
+    private final Map<Class<? extends ReusableMessage>, List<Consumer<ReusableMessage>>> reactions = new Object2ObjectHashMap<>();
     private final ExecutorService messageHandler;
 
-    Dispatcher(boolean inProcess) {
+    public Dispatcher(boolean inProcess) {
         this.messageHandler = inProcess ? null : Executors.newSingleThreadExecutor();
     }
 
@@ -33,20 +33,28 @@ public class Dispatcher implements Consumer<ReusableMessage> {
     @Override
     public void accept(ReusableMessage message) {
         List<Consumer<ReusableMessage>> consumers = reactions.get(message.getClass());
-        try {
-            if (consumers != null) {
-                consumers.forEach(consumer -> {
-                    if (messageHandler == null) {
-                        consumer.accept(message);
-                    } else {
-                        messageHandler.submit(() -> consumer.accept(message));
-                    }
-                });
-            } else {
-                throw new IllegalStateException("No handler for message of type " + message.getClass());
-            }
-        } catch (Throwable th) {
-            log.error("Problem processing message {}", message, th);
+       if (consumers != null) {
+           consumers.forEach(consumer -> {
+               dispatchTask(() -> consumer.accept(message));
+           });
+       } else {
+           throw new IllegalStateException("No handler for message of type " + message.getClass());
+       }
+    }
+
+    public void dispatchTask(Runnable task) {
+        if (messageHandler == null) {
+            task.run();
+        } else {
+            // TODO: this breaks the contract that handlers should be executed in order
+            messageHandler.submit(task);
+        }
+
+    }
+
+    public void stop() {
+        if (messageHandler != null) {
+            messageHandler.shutdownNow();
         }
     }
 }

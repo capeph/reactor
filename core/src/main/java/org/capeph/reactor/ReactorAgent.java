@@ -2,10 +2,13 @@ package org.capeph.reactor;
 
 import io.aeron.Subscription;
 import io.aeron.logbuffer.FragmentHandler;
-import org.agrona.DirectBuffer;
 import org.agrona.concurrent.Agent;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class ReactorAgent implements Agent {
+
+    private final Logger log = LogManager.getLogger(Dispatcher.class);
 
 
     private final Subscription subscription;
@@ -15,7 +18,7 @@ public class ReactorAgent implements Agent {
     public ReactorAgent(Subscription subscription, ICodec codec, MessagePool pool, Dispatcher dispatcher, String description) {
         this.description = description;
         this.subscription = subscription;
-        this.assembler = new MessageHandler(codec, pool, dispatcher);
+        this.assembler = new MessageHandler(codec, pool, dispatcher, log);
     }
 
 
@@ -27,22 +30,6 @@ public class ReactorAgent implements Agent {
     @Override
     public String roleName() {
         return description;
-    }
-
-    private record MessageHandler(ICodec codec, MessagePool messagePool, Dispatcher dispatcher) implements FragmentHandler {
-
-        @Override
-        public void onFragment(DirectBuffer buffer, int offset, int length, io.aeron.logbuffer.Header header) {
-            ReusableMessage msg = getMessage(buffer, offset);
-            if (msg != null) {
-                dispatcher.accept(msg);
-                messagePool.reuseMessage(msg);
-            }
-        }
-
-        public ReusableMessage getMessage(DirectBuffer buffer, int offset) {
-            return codec.decode(buffer, offset, messagePool);
-        }
     }
 
 }
