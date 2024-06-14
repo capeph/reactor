@@ -17,6 +17,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.capeph.lookup.dto.ReactorInfo;
 import org.capeph.messages.codec.Codec;
+import org.capeph.pool.MessagePool;
 
 import java.io.File;
 import java.util.HashMap;
@@ -134,9 +135,9 @@ public class Reactor {
         dispatcher.addMessageHandler(messageClass, messageConsumer);
     }
 
-
-
-
+    public void react(int messageId, Consumer<ReusableMessage> messageConsumer) {
+        react(codec.getClassFor(messageId), messageConsumer);
+    }
 
 
 }

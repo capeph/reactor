@@ -5,11 +5,9 @@ import io.aeron.logbuffer.FragmentHandler;
 import org.agrona.concurrent.Agent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.capeph.pool.MessagePool;
 
 public class ReactorAgent implements Agent {
-
-    private final Logger log = LogManager.getLogger(Dispatcher.class);
-
 
     private final Subscription subscription;
     private final String description;
@@ -18,7 +16,7 @@ public class ReactorAgent implements Agent {
     public ReactorAgent(Subscription subscription, ICodec codec, MessagePool pool, Dispatcher dispatcher, String description) {
         this.description = description;
         this.subscription = subscription;
-        this.assembler = new MessageHandler(codec, pool, dispatcher, log);
+        this.assembler = new MessageHandler(codec, pool, dispatcher);
     }
 
 

@@ -1,7 +1,8 @@
-package org.capeph.reactor;
+package org.capeph.pool;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.capeph.reactor.ReusableMessage;
 
 import java.lang.reflect.Constructor;
 import java.util.concurrent.atomic.AtomicInteger;

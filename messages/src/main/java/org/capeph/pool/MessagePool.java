@@ -1,11 +1,12 @@
 /*
  * Copyright 2024 Peter Danielsson
  */
-package org.capeph.reactor;
+package org.capeph.pool;
 
 import java.util.Map;
 
 import org.agrona.collections.Object2ObjectHashMap;
+import org.capeph.reactor.ReusableMessage;
 
 public class MessagePool {
 

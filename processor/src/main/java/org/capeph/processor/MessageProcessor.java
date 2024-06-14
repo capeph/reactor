@@ -178,7 +178,7 @@ public class MessageProcessor extends AbstractProcessor {
             writer.println("");
             writer.println("import org.capeph.reactor.Header;");
             writer.println("import org.capeph.reactor.ICodec;");
-            writer.println("import org.capeph.reactor.MessagePool;");
+            writer.println("import org.capeph.pool.MessagePool;");
             writer.println("import org.capeph.reactor.ReusableMessage;");
             writer.println("import org.agrona.DirectBuffer;");
             writer.println("import org.agrona.MutableDirectBuffer;");
@@ -199,6 +199,7 @@ public class MessageProcessor extends AbstractProcessor {
             functionalInterface(writer);
             constructor(writer);
             lengthMethod(writer);
+            lookupMethod(writer);
             encodeMethod(writer);
             decodeMethod(writer);
 
@@ -235,7 +236,13 @@ public class MessageProcessor extends AbstractProcessor {
             writer.print(api.getId());
             writer.print(", this::");
             writer.print(decodeFunctionName(api));
-            writer.print(");");
+            writer.println(");");
+
+            writer.print("      messageIdMap.put(");
+            writer.print(api.getId());
+            writer.print(", ");
+            writer.print(api.getName());
+            writer.println(".class);");
         }
         writer.println("   }");
         writer.println("");
@@ -246,6 +253,7 @@ public class MessageProcessor extends AbstractProcessor {
         writer.println("   private Map<Class<? extends ReusableMessage>, Function<ReusableMessage, Integer>> lengthFuns = new HashMap<>();");
         writer.println("   private Map<Class<? extends ReusableMessage>, TriFunction<ReusableMessage, MutableDirectBuffer, Integer, Integer>> encodeFuns = new HashMap<>();");
         writer.println("   private Map<Integer, TriFunction<DirectBuffer, Integer, MessagePool, ? extends ReusableMessage>> decodeFuns = new HashMap<>();");
+        writer.println("   private Map<Integer, Class<? extends ReusableMessage>> messageIdMap = new HashMap<>();");
         writer.println("");
     }
 
@@ -268,6 +276,14 @@ public class MessageProcessor extends AbstractProcessor {
         writer.println("          throw new IllegalArgumentException(\"No message length function matching \"");
         writer.println("                                              + msg.getClass());");
         writer.println("      }");
+        writer.println("   }");
+        writer.println("");
+    }
+
+    private void lookupMethod(PrintWriter writer) {
+        writer.println("   @Override");
+        writer.println("   public Class<? extends ReusableMessage> getClassFor(int id) {");
+        writer.println("      return messageIdMap.get(id);");
         writer.println("   }");
         writer.println("");
     }

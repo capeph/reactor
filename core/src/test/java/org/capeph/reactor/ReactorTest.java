@@ -4,6 +4,7 @@ package org.capeph.reactor;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.capeph.lookup.LookupService;
+import org.capeph.pool.MessagePool;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -81,6 +82,11 @@ class ReactorTest {
         }
 
         @Override
+        public Class<? extends ReusableMessage> getClassFor(int id) {
+            return TestMessage.class;
+        }
+
+        @Override
         public int encodedLength(ReusableMessage msg) {
             Function<ReusableMessage, Integer> fun = lengthFuns.get(msg.getClass());
             if (fun != null) {
@@ -110,7 +116,7 @@ class ReactorTest {
     }
 
     @Test
-    public void testRegister() throws URISyntaxException, IOException, InterruptedException {
+    public void testRegister() throws InterruptedException {
         ICodec testCodec = new TestCodec();
         LookupService.main(new String[]{"lookup"});
         Reactor reactora = new Reactor("reactora", "localhost:10000",

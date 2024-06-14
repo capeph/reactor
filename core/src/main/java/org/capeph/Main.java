@@ -8,6 +8,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.capeph.pool.MessagePool;
 import org.capeph.reactor.*;
 
 public class Main
@@ -30,6 +31,11 @@ public class Main
 
         public TestCodec(MessagePool pool) {
             this.pool = pool;
+        }
+
+        @Override
+        public Class<? extends ReusableMessage> getClassFor(int id) {
+            return HandleMsg.class;
         }
 
         @Override
@@ -66,7 +72,7 @@ public class Main
                 throw new RuntimeException("Error in the message Pool");
             }
         } );
-        MessageHandler handler = new MessageHandler(codec, pool, dispatcher, log);
+        MessageHandler handler = new MessageHandler(codec, pool, dispatcher);
         System.out.println("starting loop");
 
         for (int i = 0; i < 100000; i++) {
