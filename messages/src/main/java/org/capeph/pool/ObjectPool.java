@@ -14,7 +14,7 @@ public class ObjectPool<T> {
     private volatile T[] store;
     private final AtomicInteger read;
     private final AtomicInteger write;
-    private final AtomicInteger elements;
+    private volatile int elements;
 
     private final Logger log = LogManager.getLogger(ObjectPool.class);
     private final int maxSize;
@@ -34,7 +34,7 @@ public class ObjectPool<T> {
             for(int i = 0 ; i < size; i++) {
                 store[i] = constructor.newInstance();
             }
-            elements = new AtomicInteger(size);
+            elements = size;
             read = new AtomicInteger(0);
             write = new AtomicInteger(size);
             log.info("Pool initialized: read {}  write {}", read.get(), write.get());
@@ -47,9 +47,9 @@ public class ObjectPool<T> {
         while (emptyPool()) {
             // backoff to allow in flight objects to trickle in before allocating
             // with real life loads the backoff should move down
-            if (elements.get() < store.length && elements.get() < maxSize) {
+            if (elements < store.length && elements < maxSize) {
                 try {
-                    if (elements.incrementAndGet() == maxSize) {
+                    if (++elements == maxSize) {
                         log.info("ObjectPool has reached limit for growing: {} elements", maxSize);
                     }
                     return constructor.newInstance();
@@ -77,8 +77,8 @@ public class ObjectPool<T> {
 
     @SuppressWarnings("unchecked")
     public void put(ReusableMessage obj) {
-        if (emptyPool() && elements.get() == store.length && store.length < maxSize) {
-            log.info("Expanding pool to {}, to fit {}", store.length * 2, elements.get());
+        if (emptyPool() && elements == store.length && store.length < maxSize) {
+            log.info("Expanding pool to {}, to fit {}", store.length * 2, elements);
             T[] newStore = (T[]) new Object[store.length * 2];
             mask = newStore.length - 1;
             int idx = write.get() & mask;
