@@ -60,7 +60,7 @@ public class Main
         MessagePool pool = new MessagePool();
         ICodec codec = new TestCodec(pool);
         pool.addMessagePool(HandleMsg.class);
-        Dispatcher dispatcher = new Dispatcher(true);
+        Dispatcher dispatcher = new Dispatcher(false);
         dispatcher.addMessageHandler(HandleMsg.class, m -> {
             if(!((HandleMsg)m).value) {
                 throw new RuntimeException("Error in the message Pool");
@@ -74,7 +74,7 @@ public class Main
         }
 
         long start = System.nanoTime();
-        int its = 10000000;
+        int its = 100000000;
         for (int i = 0; i < its; i++) {
             handler.onFragment(null, 0, 0, null);
         }

@@ -3,20 +3,14 @@
  */
 package org.capeph.reactor;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.agrona.collections.Object2ObjectHashMap;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 public class MessagePool {
 
-    private final int initialPoolSize = 12;
+    private final int initialPoolSize = 6;
 
-    private final Logger log = LogManager.getLogger(MessagePool.class);
     private final Map<Class<? extends ReusableMessage>, ObjectPool<? extends ReusableMessage>> templates = new Object2ObjectHashMap<>();
 
 

@@ -11,13 +11,21 @@ public class ObjectPool<T> {
     private final Constructor<T> constructor;
     private volatile int mask;
     private volatile T[] store;
-    private volatile AtomicInteger read;
-    private volatile AtomicInteger write;
+    private final AtomicInteger read;
+    private final AtomicInteger write;
+    private final AtomicInteger elements;
 
     private final Logger log = LogManager.getLogger(ObjectPool.class);
+    private final int maxSize;
 
     public ObjectPool(Class<T> clazz, int sizeFactor) {
+        this(clazz, sizeFactor, Math.min(24, sizeFactor*2));
+    }
+
+    @SuppressWarnings("unchecked")
+    public ObjectPool(Class<T> clazz, int sizeFactor, int maxSizeFactor) {
         int size = 1 << sizeFactor;
+        maxSize = 1 << maxSizeFactor;
         mask = size - 1;
         store = (T[]) new Object[size];
         try {
@@ -25,6 +33,7 @@ public class ObjectPool<T> {
             for(int i = 0 ; i < size; i++) {
                 store[i] = constructor.newInstance();
             }
+            elements = new AtomicInteger(size);
             read = new AtomicInteger(0);
             write = new AtomicInteger(size);
             log.info("Pool initialized: read {}  write {}", read.get(), write.get());
@@ -35,7 +44,20 @@ public class ObjectPool<T> {
 
     public T get() {
         while (emptyPool()) {
+            // backoff to allow in flight objects to trickle in before allocating
+            // with real life loads the backoff should move down
+            if (elements.get() < store.length && elements.get() < maxSize) {
+                try {
+                    if (elements.incrementAndGet() == maxSize) {
+                        log.info("ObjectPool has reached limit for growing: {} elements", maxSize);
+                    }
+                    return constructor.newInstance();
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }
             Thread.yield();   // TODO: better backoff strategy?
+
         }
         int idx = read.getAndIncrement() & mask;
         T result = store[idx];
@@ -54,8 +76,18 @@ public class ObjectPool<T> {
 
     @SuppressWarnings("unchecked")
     public void put(ReusableMessage obj) {
-        int idx = write.get() & mask;
-        store[idx] = (T) obj;
+        if (emptyPool() && elements.get() == store.length && store.length < maxSize) {
+            log.info("Expanding pool to {}, to fit {}", store.length * 2, elements.get());
+            T[] newStore = (T[]) new Object[store.length * 2];
+            mask = newStore.length - 1;
+            int idx = write.get() & mask;
+            newStore[idx] = (T) obj;
+            store = newStore;
+        }
+        else {
+            int idx = write.get() & mask;
+            store[idx] = (T) obj;
+        }
         write.getAndIncrement();
     }
 }
