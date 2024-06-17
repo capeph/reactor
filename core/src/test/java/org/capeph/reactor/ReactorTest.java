@@ -119,9 +119,8 @@ class ReactorTest {
     public void testRegister() throws InterruptedException {
         ICodec testCodec = new TestCodec();
         LookupService.main(new String[]{"lookup"});
-        Reactor reactora = new Reactor("reactora", "localhost:10000",
-                "http://localhost:9000", false, testCodec);
-        Reactor reactorb = new Reactor("reactorb", "localhost:10010", "http://localhost:9000", false, testCodec);
+        Reactor reactora = new Reactor("reactora", "localhost:10000", false, testCodec);
+        Reactor reactorb = new Reactor("reactorb", "localhost:10010", false, testCodec);
         final String[] received = {""};
         reactorb.react(TestMessage.class, msg -> received[0] = ((TestMessage)msg).getContent());
         TestMessage msg = new TestMessage();

@@ -3,8 +3,6 @@ package org.capeph.reactor;
 import io.aeron.Subscription;
 import io.aeron.logbuffer.FragmentHandler;
 import org.agrona.concurrent.Agent;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.capeph.pool.MessagePool;
 
 public class ReactorAgent implements Agent {

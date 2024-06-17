@@ -17,6 +17,7 @@ repositories {
 }
 
 dependencies {
+    implementation(project(":config"))
     implementation(project(":lookup"))
     implementation(project(":messages"))
     implementation("com.fasterxml.jackson.core:jackson-databind:2.15.4")

@@ -1,0 +1,7 @@
+reactor:
+  lookup:
+    url: http://localhost:9000
+    path: /lookup
+  pool:
+    min: 6
+    max: 12

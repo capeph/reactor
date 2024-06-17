@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.capeph.config.Config;
 import org.capeph.lookup.dto.ReactorInfo;
 
 import java.net.HttpURLConnection;
@@ -18,19 +19,13 @@ public class Registrar {
 
     private final Logger log = LogManager.getLogger(Registrar.class);
 
-    private final String lookupUrl;
-
-    public Registrar(String lookupUrl) {
-        this.lookupUrl = lookupUrl;
-    }
-
     public ReactorInfo register(String name, String endpoint)  {
         try (HttpClient httpClient = HttpClient.newHttpClient()) {
             ObjectMapper objectMapper = new ObjectMapper();
             // TODO: move DTOs to separate module
             String body = objectMapper.writeValueAsString(new ReactorInfo(name, endpoint, 0));
             HttpRequest update = HttpRequest.newBuilder()
-                    .uri(new URI(lookupUrl + "/lookup"))  //TODO:  make path a constant
+                    .uri(new URI(Config.getLookupUrl() + Config.getLookupPath()))
                     .header("Content-Type", "application/json")
                     .header("Accept", "application/json")
                     .POST(ofString(body))
@@ -53,7 +48,7 @@ public class Registrar {
     public ReactorInfo lookupReactor(String name) {
         try(HttpClient httpClient = HttpClient.newHttpClient()) {
             HttpRequest query = HttpRequest.newBuilder()
-                    .uri(new URI(lookupUrl + "/lookup/" + name))
+                    .uri(new URI(Config.getLookupUrl() + Config.getLookupPath() + "/" + name))
                     .header("Accept", "application/json")
                     .GET()
                     .build();

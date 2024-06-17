@@ -40,11 +40,10 @@ public class Reactor {
     /**
      * @param name      name of the reactor. used to look up
      * @param endpoint  the local endpoint
-     * @param lookupUrl url used for looking up other reactors
      * @param overrideCodec optional codec class
      */
-    public Reactor(String name, String endpoint, String lookupUrl, boolean inProcess, ICodec overrideCodec)  {
-        registrar = new Registrar(lookupUrl);
+    public Reactor(String name, String endpoint, boolean inProcess, ICodec overrideCodec)  {
+        registrar = new Registrar();
         if (!verifyMediaDriver()) {
             throw new IllegalStateException("Could not get or start a media driver");
         }

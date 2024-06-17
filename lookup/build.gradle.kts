@@ -13,6 +13,7 @@ repositories {
 }
 
 dependencies {
+    implementation(project(":config"))
     implementation("org.springframework.boot:spring-boot-starter-webflux")
     implementation("org.springdoc:springdoc-openapi-ui:1.7.0")
     implementation("org.springframework.boot:spring-boot-starter-actuator")

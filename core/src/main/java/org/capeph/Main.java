@@ -59,14 +59,14 @@ public class Main
         }
     }
 
-    public static void main(final String[] args) throws InterruptedException {
+    public static void runLocalTest() {
         System.out.println("Reactor");
 
         Logger log = LogManager.getLogger();
         MessagePool pool = new MessagePool();
         ICodec codec = new TestCodec(pool);
         pool.addMessagePool(HandleMsg.class);
-        Dispatcher dispatcher = new Dispatcher(false);
+        Dispatcher dispatcher = new Dispatcher(true);
         dispatcher.addMessageHandler(HandleMsg.class, m -> {
             if(!((HandleMsg)m).value) {
                 throw new RuntimeException("Error in the message Pool");
@@ -89,4 +89,12 @@ public class Main
         dispatcher.stop();
 
     }
+
+
+
+    public static void main(final String[] args) throws InterruptedException {
+        System.out.println("Reactor");
+        runLocalTest();
+    }
+
 }

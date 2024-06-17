@@ -1,8 +1,6 @@
 package org.capeph.reactor;
 
 import org.agrona.collections.Object2ObjectHashMap;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.util.*;
 import java.util.concurrent.ExecutorService;
@@ -11,7 +9,6 @@ import java.util.function.Consumer;
 
 public class Dispatcher implements Consumer<ReusableMessage> {
 
-    private final Logger log = LogManager.getLogger(Dispatcher.class);
     private final Map<Class<? extends ReusableMessage>, List<Consumer<ReusableMessage>>> reactions = new Object2ObjectHashMap<>();
     private final ExecutorService messageHandler;
 

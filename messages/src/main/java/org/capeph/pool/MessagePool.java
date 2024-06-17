@@ -6,18 +6,20 @@ package org.capeph.pool;
 import java.util.Map;
 
 import org.agrona.collections.Object2ObjectHashMap;
+import org.capeph.config.Config;
 import org.capeph.reactor.ReusableMessage;
 
 public class MessagePool {
 
-    private final int initialPoolSize = 6;
-
     private final Map<Class<? extends ReusableMessage>, ObjectPool<? extends ReusableMessage>> templates = new Object2ObjectHashMap<>();
 
+    private ObjectPool<? extends ReusableMessage> createPool(Class<? extends ReusableMessage> msgClazz) {
+        return new ObjectPool<>(msgClazz, Config.getMinPoolSize(), Config.getMaxPoolSize());
+    }
 
     public ReusableMessage getMessageTemplate(Class<? extends ReusableMessage> msgClazz) {
         ObjectPool<? extends ReusableMessage> pool =
-                templates.computeIfAbsent(msgClazz,  m -> new ObjectPool<>(m, initialPoolSize));
+                templates.computeIfAbsent(msgClazz, this::createPool);
         return pool.get();
     }
 
@@ -29,6 +31,6 @@ public class MessagePool {
     }
 
     public void addMessagePool(Class<? extends ReusableMessage> msgClazz) {
-        templates.computeIfAbsent(msgClazz,  m -> new ObjectPool<>(m, initialPoolSize));
+        templates.computeIfAbsent(msgClazz,  this::createPool);
     }
 }
