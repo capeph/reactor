@@ -31,4 +31,7 @@ incoming message.
 It is possible to register multiple callback methods. These will be called
 in the order they were registered.
 
+There is a simple config framework that relies on a static POJO to provide
+some basic parameters that are defined in a YAML file or can be overridden
+with system properties.
 
