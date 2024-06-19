@@ -8,6 +8,11 @@ public class StringValue extends PathParameter{
         Loader.registerParameter(this);
     }
 
+    @Override
+    void setValue(Object value) {
+        this.value = value.toString();  // TODO: add some validation
+    }
+
     public String get() {
         return value;
     }

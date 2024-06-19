@@ -1,6 +1,6 @@
 package org.capeph.config;
 
-public class PathParameter {
+public abstract class PathParameter {
 
     private final String path;
     private Loader.ConfigSource source;
@@ -20,4 +20,6 @@ public class PathParameter {
     public Loader.ConfigSource getSource() {
         return source;
     }
+
+    abstract void setValue(Object value);
 }

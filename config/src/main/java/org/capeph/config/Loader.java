@@ -13,6 +13,8 @@ import org.apache.logging.log4j.Logger;
 //TODO: add support for Maps and Lists
 public class Loader {
 
+    public enum ConfigSource {FILE, PROPERTY}
+
     private static final Logger log = LogManager.getLogger(Loader.class);
 
     static Map<String, PathParameter> parameters = new HashMap<>();
@@ -23,15 +25,21 @@ public class Loader {
     }
 
     static void registerParameter(PathParameter parameter) {
-        setValue(parameter, fileValues);
+        setValue(fileValues, parameter);
         parameters.put(parameter.getPath(), parameter);
     }
 
-    private static void setValue(PathParameter parameter, Map<String, Object> configValues) {
-        switch (parameter) {
-            case StringValue strVal -> setValue(configValues, strVal);
-            case IntValue intVal -> setValue(configValues, intVal);
-            default -> throw new IllegalArgumentException("Unsupported parameter type for " + parameter.getPath());
+    private static void setValue(Map<String, Object> fileValues, PathParameter param) {
+        String resultStr = System.getProperty(param.getPath());
+        if (resultStr != null) {
+            param.setValue(resultStr);
+            param.setSource(ConfigSource.PROPERTY);
+        } else {
+            Object fileObject = getFrom(param.getPath(), fileValues);
+            if (fileObject != null) {
+                param.setValue(fileObject);
+                param.setSource(ConfigSource.FILE);
+            }
         }
     }
 
@@ -67,37 +75,6 @@ public class Loader {
         throw new IllegalArgumentException("Could not find key");
     }
 
-    public enum ConfigSource {FILE, PROPERTY}
 
-    private static void setValue(Map<String, Object> fileValues, StringValue param) {
-        ConfigSource source = ConfigSource.PROPERTY;
-        String result = System.getProperty(param.getPath());
-        if (result == null) {
-            source = ConfigSource.FILE;
-            result = String.valueOf(getFrom(param.getPath(), fileValues));
-        }
-        if (result != null) {
-            param.setValue(result);
-            param.setSource(source);
-        }
-    }
-
-    private static void setValue(Map<String, Object> fileValues, IntValue param) {
-        String resultStr = System.getProperty(param.getPath());
-        if (resultStr != null) {
-            param.setValue(Integer.parseInt(resultStr));
-            param.setSource(ConfigSource.PROPERTY);
-        } else {
-            Object fileObject = getFrom(param.getPath(), fileValues);
-            if (fileObject != null) {
-                param.setValue(switch (getFrom(param.getPath(), fileValues)) {
-                    case Integer intObj -> intObj;
-                    case String strObj -> Integer.parseInt(strObj);
-                    default -> throw new IllegalArgumentException(param.getPath() + " is not an integer in file config");
-                });
-                param.setSource(ConfigSource.FILE);
-            }
-        }
-    }
 
 }
