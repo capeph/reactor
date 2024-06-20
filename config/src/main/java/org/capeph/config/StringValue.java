@@ -5,7 +5,7 @@ public class StringValue extends PathParameter{
 
     StringValue(String path) {
         super(path);
-        Loader.registerParameter(this);
+        Loader.setupParameter(this);
     }
 
     @Override
@@ -15,9 +15,5 @@ public class StringValue extends PathParameter{
 
     public String get() {
         return value;
-    }
-
-    void setValue(String value) {
-        this.value = value;
     }
 }

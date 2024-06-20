@@ -5,7 +5,7 @@ public class IntValue extends PathParameter{
 
     public IntValue(String path) {
         super(path);
-        Loader.registerParameter(this);
+        Loader.setupParameter(this);
     }
 
     @Override

@@ -1,0 +1,14 @@
+reactor:
+  lookup:
+    url: http://localhost:9000
+    path: /lookup
+  pool:
+    min: 4
+    max: 8
+test:
+  values:
+    int: 27
+    double: 64.75
+    string: space string
+  double.keys:
+    int: 12

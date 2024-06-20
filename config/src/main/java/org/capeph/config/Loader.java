@@ -1,9 +1,7 @@
 package org.capeph.config;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.HashMap;
-import java.util.Map;
+import java.io.*;
+import java.util.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
@@ -24,7 +22,17 @@ public class Loader {
         loadFileConfig();
     }
 
-    static void registerParameter(PathParameter parameter) {
+    public static void reloadConfig() {
+        loadFileConfig();
+        Collection<PathParameter> params = new ArrayList<>(parameters.values());
+        parameters.clear();
+        params.forEach(Loader::setupParameter);
+    }
+
+    static void setupParameter(PathParameter parameter) {
+        if (parameters.containsKey(parameter.getPath())) {
+            throw new IllegalArgumentException("Another parameter is already defined with the same path");
+        }
         setValue(fileValues, parameter);
         parameters.put(parameter.getPath(), parameter);
     }
@@ -43,26 +51,36 @@ public class Loader {
         }
     }
 
+    private static InputStream openConfigFile(String path) throws FileNotFoundException {
+        if (path == null) {
+            log.info("No external config file specified, using provided file");
+            return Loader.class.getResourceAsStream("/config.yaml");
+        }
+        log.info("Reading config from {}", path);
+        File configFile = new File(path);
+        return new FileInputStream(configFile);
+    }
 
     @SuppressWarnings("unchecked")
     private static void loadFileConfig() {
         // TODO: provide path to config file in property
         ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
-        InputStream resource = Loader.class.getResourceAsStream("/config.yaml");
+        String path = System.getProperty("reactor.config.file");
         try {
+            InputStream resource = openConfigFile(path);
             fileValues = mapper.readValue(resource, Map.class);
         } catch (IOException e) {
             log.error("Failed to read config file");
-            throw new RuntimeException(e);
+            throw new UncheckedIOException("File at " + path + " not found:", e);
         }
     }
 
     @SuppressWarnings("unchecked")
     private static Object getFrom(String key, Map<String, Object> map) {
         Object result = null;
-        int idx = 0;
+        int idx = -1;
         while (result == null) {
-            idx = key.indexOf('.', idx);
+            idx = key.indexOf('.', idx+1);
             String subKey = idx == -1 ? key : key.substring(0, idx);
             result = map.get(subKey);
             if (idx == -1) {
