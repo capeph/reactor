@@ -19,7 +19,8 @@ class DoubleValueTest {
         assertEquals(31.5, dvn.get(), 0.001);
         dvn.setValue(17);
         assertEquals(17.0, dvn.get(), 0.001);
-
+        assertThrows(IllegalArgumentException.class, () -> dvn.setValue(null));
+        assertThrows(IllegalArgumentException.class, () -> dvn.setValue('a'));
     }
 
 }

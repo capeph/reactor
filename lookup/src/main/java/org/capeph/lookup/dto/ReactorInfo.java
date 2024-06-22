@@ -5,6 +5,7 @@ package org.capeph.lookup.dto;
 
 import io.swagger.v3.oas.annotations.Parameter;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Pattern;
 import lombok.*;
 import org.capeph.lookup.store.Store;
 
@@ -23,13 +24,16 @@ public class ReactorInfo {
     public static final String ValidHostnameRegex =
             "^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\\-]*[a-zA-Z0-9])\\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\\-]*[A-Za-z0-9])$";
 
+    public static final String ValidHostPortRegex =
+            "^[a-zA-Z0-9\\-]*(\\.[a-zA-Z0-9\\-]*)*\\:[0-9]+";
+
 
     @Parameter(description = "Name of the reactor")
     private String name;
 
     @Parameter(description = "Host reactor is running on")
 //TODO: better regex to validate endpoint hostname:port
-//    @Pattern(regexp = ValidHostnameRegex, message = "Must be a valid host name or ip")
+    @Pattern(regexp = ValidHostPortRegex, message = "Must be a valid host name or ip")
     private String endpoint;
 
     @Parameter(description = "Id of the messaging channel")

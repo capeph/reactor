@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
@@ -70,4 +71,34 @@ class LookupControllerTest {
     }
 
 
+    @Test
+    // test store a dto and auto assign channel
+    public void testPutWithBadEndpoint() throws Exception {
+        ReactorInfo body = ReactorInfo.builder()
+                .name("test2")
+                .endpoint("superbroken$%#")
+                .streamid(0)  // should be automatically bumped to 1;
+                .build();
+        mvc.perform(MockMvcRequestBuilders.post("/lookup")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(new ObjectMapper().writeValueAsString(body))
+                                .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().is(HttpStatus.BAD_REQUEST.value()));
+    }
+
+
+    @Test
+    // test store a dto and auto assign channel
+    public void testPutWithNegativeChannel() throws Exception {
+        ReactorInfo body = ReactorInfo.builder()
+                .name("test3")
+                .endpoint("test.host.name:9000")
+                .streamid(-5)  // should fail validation
+                .build();
+        mvc.perform(MockMvcRequestBuilders.post("/lookup")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(new ObjectMapper().writeValueAsString(body))
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().is(HttpStatus.BAD_REQUEST.value()));
+    }
 }

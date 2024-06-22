@@ -31,6 +31,21 @@ class StoreTest {
     }
 
     @Test
+    public void testAddTwice() {
+        Store store = new Store();
+        add(store, getDto("first", 2));
+        assertThrows(IllegalArgumentException.class, () -> add(store, getDto("first", 1)));
+    }
+
+    @Test
+    public void testAddSameChannel() {
+        Store store = new Store();
+        add(store, getDto("first", 2));
+        assertThrows(IllegalArgumentException.class, () -> add(store, getDto("second", 2)));
+    }
+
+
+    @Test
     public void testAssignChannel2() {
         Store store = new Store();
         add(store, getDto("first", 1));

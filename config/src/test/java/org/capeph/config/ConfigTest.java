@@ -62,12 +62,15 @@ class ConfigTest {
     @Test
     public void testPropertyOverride() {
         assertEquals(27, Values.intVal.get());  // old config should still work!
+        assertEquals(Loader.ConfigSource.FILE, Values.intVal.getSource());
         System.setProperty("test.values.int", "42");
         Loader.reloadConfig();
         assertEquals(42, Values.intVal.get());  // check new config
+        assertEquals(Loader.ConfigSource.PROPERTY, Values.intVal.getSource());
         System.clearProperty("test.values.int");
         Loader.reloadConfig();
         assertEquals(27, Values.intVal.get());  // old config is restored
+        assertEquals(Loader.ConfigSource.FILE, Values.intVal.getSource());
     }
 
 }

@@ -10,6 +10,9 @@ public class DoubleValue extends PathParameter{
 
     @Override
     void setValue(Object value) {
+        if (value == null) {
+            throw new IllegalArgumentException("Can not set a double to null");
+        }
         this.value = switch (value) {
             case Float floatObj -> floatObj;
             case Double doubleObj -> doubleObj;
