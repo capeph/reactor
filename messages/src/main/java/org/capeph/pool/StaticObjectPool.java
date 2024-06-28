@@ -2,11 +2,10 @@ package org.capeph.pool;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.capeph.reactor.ReusableMessage;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class StaticObjectPool<T> {
+public class StaticObjectPool<T> implements ObjectPool<T> {
 
     private final int mask;
     private final T[] store;
@@ -47,14 +46,14 @@ public class StaticObjectPool<T> {
         return result;
     }
 
-    private boolean emptyPool() {
+    public boolean emptyPool() {
         return read.get() >= write.get();
     }
 
-    @SuppressWarnings("unchecked")
-    public void put(ReusableMessage obj) {
+    @Override
+    public void put(T obj) {
         int idx = write.get() & mask;
-        store[idx] = (T) obj;
+        store[idx] = obj;
         write.getAndIncrement();
     }
 }

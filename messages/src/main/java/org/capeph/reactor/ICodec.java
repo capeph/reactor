@@ -15,6 +15,8 @@ public interface ICodec {
 
     int encode(ReusableMessage msg, MutableDirectBuffer buffer, int offset);
 
+    void clear(ReusableMessage msg);
+
     ReusableMessage decode(DirectBuffer buffer, int offset, MessagePool messagePool);
 
 }

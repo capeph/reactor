@@ -11,6 +11,8 @@ public class DemoMessage implements ReusableMessage {
 
     private String stringField;
 
+    private final StringBuffer stringBufferField = new StringBuffer();
+
     private int intField;
 
     private boolean boolField;
@@ -25,6 +27,15 @@ public class DemoMessage implements ReusableMessage {
 
     public void setStringField(String stringField) {
         this.stringField = stringField;
+    }
+
+    public StringBuffer getStringBufferField() {
+        return stringBufferField;
+    }
+
+    public void setStringBufferField(String value) {
+        this.stringBufferField.setLength(0);
+        this.stringBufferField.append(value);
     }
 
     public int getIntField() {
@@ -62,6 +73,7 @@ public class DemoMessage implements ReusableMessage {
     @Override
     public void clear() {
         stringField = "";
+        stringBufferField.setLength(0);
         intField = 0;
         boolField = false;
         doubleField = 0.0D;

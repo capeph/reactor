@@ -4,6 +4,7 @@ package org.capeph.reactor;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.capeph.lookup.LookupService;
+import org.capeph.messages.DemoMessage;
 import org.capeph.pool.MessagePool;
 import org.junit.jupiter.api.Test;
 
@@ -11,6 +12,7 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -58,15 +60,21 @@ class ReactorTest {
         private Map<Class<? extends ReusableMessage>, Function<ReusableMessage, Integer>> lengthFuns = new HashMap<>();
         private Map<Class<? extends ReusableMessage>, TriFunction<ReusableMessage, MutableDirectBuffer, Integer, Integer>> encodeFuns = new HashMap<>();
         private Map<Integer, TriFunction<DirectBuffer, Integer, MessagePool, ? extends ReusableMessage>> decodeFun = new HashMap<>();
+        private Map<Class<? extends ReusableMessage>, Consumer<ReusableMessage>> clearFuns = new HashMap<>();
 
         public TestCodec() {
             lengthFuns.put(TestMessage.class, msg -> getTestMessageEncodedLength((TestMessage) msg));
             encodeFuns.put(TestMessage.class, (msg, buffer, offset) -> encodeTestMessage((TestMessage) msg, buffer, offset));
             decodeFun.put(1, this::decodeTestMessage);
+            clearFuns.put(TestMessage.class, msg -> clearTestMessage((TestMessage) msg));
         }
 
         private int getTestMessageEncodedLength(TestMessage msg) {
             return msg.getContent().length() + Integer.BYTES;
+        }
+
+        private void clearTestMessage(TestMessage msg) {
+            msg.clear();
         }
 
         private int encodeTestMessage(TestMessage msg, MutableDirectBuffer buffer, int offset) {
@@ -106,6 +114,11 @@ class ReactorTest {
             else {
                 throw new IllegalArgumentException("No encoder function matching " + msg.getClass());
             }
+        }
+
+        @Override
+        public void clear(ReusableMessage msg) {
+
         }
 
         @Override

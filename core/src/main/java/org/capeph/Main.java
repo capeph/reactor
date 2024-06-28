@@ -49,6 +49,11 @@ public class Main
         }
 
         @Override
+        public void clear(ReusableMessage msg) {
+            ((HandleMsg)msg).value = false;
+        }
+
+        @Override
         public ReusableMessage decode(DirectBuffer buffer, int offset, MessagePool messagePool) {
             HandleMsg msg = (HandleMsg) pool.getMessageTemplate(HandleMsg.class);
             if (msg.value) {
@@ -66,7 +71,7 @@ public class Main
         MessagePool pool = new MessagePool();
         ICodec codec = new TestCodec(pool);
         pool.addMessagePool(HandleMsg.class);
-        Dispatcher dispatcher = new Dispatcher(true);
+        Dispatcher dispatcher = new Dispatcher(false);
         dispatcher.addMessageHandler(HandleMsg.class, m -> {
             if(!((HandleMsg)m).value) {
                 throw new RuntimeException("Error in the message Pool");
