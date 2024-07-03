@@ -30,7 +30,7 @@ public class Reactor {
     MediaDriver driver;
     Aeron aeron;
     private final Map<String, Publication> publications = new HashMap<>();
-    private final MessagePool messagePool = new MessagePool();
+    private final MessagePool messagePool;
     private final Dispatcher dispatcher;
     private final Consumer<String> logConsumer = (s) -> log.info("Media Driver check: {}", s);
     private final IdleStrategy reactorIdleStrategy;
@@ -49,8 +49,8 @@ public class Reactor {
         }
         log.info("Media driver is running at {}", MediaDriver.Context.getAeronDirectoryName());
 
-        dispatcher = new Dispatcher(inProcess);
         this.codec = overrideCodec == null ? new Codec() :  overrideCodec;
+        messagePool = new MessagePool(m -> codec.clear((ReusableMessage)m));
         aeron = Aeron.connect();
 
         ReactorInfo info = registrar.register(name, endpoint);
@@ -58,6 +58,7 @@ public class Reactor {
 
         reactorIdleStrategy = aeron.context().idleStrategy();
         // start agent  TODO: setup errorCounter
+        dispatcher = new Dispatcher(reactorIdleStrategy, messagePool, false);
         String description = "Reactor(" + name + "," + endpoint + ")";
         Agent agent = new ReactorAgent(subscription, codec, messagePool, dispatcher, description);
         final var runner = new AgentRunner(reactorIdleStrategy, this::errorHandler,null, agent);

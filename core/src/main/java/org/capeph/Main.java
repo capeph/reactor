@@ -6,10 +6,13 @@ package org.capeph;
 
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.agrona.concurrent.IdleStrategy;
+import org.agrona.concurrent.SleepingIdleStrategy;
 import org.capeph.pool.MessagePool;
-import org.capeph.reactor.*;
+import org.capeph.reactor.Dispatcher;
+import org.capeph.reactor.ICodec;
+import org.capeph.reactor.MessageHandler;
+import org.capeph.reactor.ReusableMessage;
 
 public class Main
 {
@@ -65,24 +68,22 @@ public class Main
     }
 
     public static void runLocalTest() {
-        System.out.println("Reactor");
-
-        Logger log = LogManager.getLogger();
-        MessagePool pool = new MessagePool();
+        MessagePool pool = new MessagePool(m -> ((HandleMsg)m).clear());
         ICodec codec = new TestCodec(pool);
         pool.addMessagePool(HandleMsg.class);
-        Dispatcher dispatcher = new Dispatcher(false);
+        IdleStrategy strategy = new SleepingIdleStrategy();
+        Dispatcher dispatcher = new Dispatcher(strategy, pool, false);
         dispatcher.addMessageHandler(HandleMsg.class, m -> {
             if(!((HandleMsg)m).value) {
                 throw new RuntimeException("Error in the message Pool");
             }
         } );
         MessageHandler handler = new MessageHandler(codec, pool, dispatcher);
-        System.out.println("starting loop");
-
-        for (int i = 0; i < 100000; i++) {
+        System.out.println("starting warmup");
+        for (int i = 0; i < 10000; i++) {
             handler.onFragment(null, 0, 0, null);
         }
+        System.out.println("starting loop");
 
         long start = System.nanoTime();
         int its = 100000000;
@@ -94,7 +95,6 @@ public class Main
         dispatcher.stop();
 
     }
-
 
 
     public static void main(final String[] args) throws InterruptedException {

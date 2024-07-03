@@ -31,10 +31,6 @@ public final class MessageHandler implements FragmentHandler {
                 dispatcher.accept(msg);
             } catch (Throwable th) {
                 log.error("Dispatcher threw error ", th);
-            } finally {
-                // reuse the threadPool in dispatcher to not dispatch messages prematurely
-                codec.clear(msg);
-                dispatcher.dispatchTask(() -> messagePool.reuseMessage(msg));
             }
         }
     }

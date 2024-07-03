@@ -1,16 +1,22 @@
 package org.capeph.reactor;
 
+import org.agrona.concurrent.IdleStrategy;
+import org.agrona.concurrent.SleepingIdleStrategy;
+import org.capeph.pool.MessagePool;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class DispatcherTest {
 
-    private class TestMessage implements ReusableMessage {
+    public static class TestMessage implements ReusableMessage {
 
         public int cleared = 0;
         public boolean flag = false;
         public int value = 0;
+
+        public TestMessage() {
+        }
 
         @Override
         public void clear() {
@@ -20,16 +26,31 @@ class DispatcherTest {
     }
 
     @Test
-    public void testNoMessageHandler() {
-        Dispatcher dispatch = new Dispatcher(true);
+    public void testNoMessageHandlerNoClear() {
+        IdleStrategy strategy = new SleepingIdleStrategy();
+        MessagePool pool = new MessagePool(m -> {});
+        Dispatcher dispatch = new Dispatcher(strategy, pool, true);
         TestMessage msg = new TestMessage();
         assertThrows(IllegalStateException.class, ()-> dispatch.accept(msg));
-        assertEquals(0, msg.cleared);
+        assertEquals(0, msg.cleared);   // no clear up function
+    }
+
+
+    @Test
+    public void testNoMessageHandlerButClear() {
+        IdleStrategy strategy = new SleepingIdleStrategy();
+        MessagePool pool = new MessagePool(m -> ((TestMessage)m).clear());
+        Dispatcher dispatch = new Dispatcher(strategy, pool, true);
+        TestMessage msg = new TestMessage();
+        assertThrows(IllegalStateException.class, ()-> dispatch.accept(msg));
+        assertEquals(1, msg.cleared);   // we clear up the message anyway!
     }
 
     @Test
-    public void testHasMessageHandler() {
-        Dispatcher dispatch = new Dispatcher(true);
+    public void testHasMessageHandlerNoClearUp() {
+        IdleStrategy strategy = new SleepingIdleStrategy();
+        MessagePool pool = new MessagePool(m -> {});
+        Dispatcher dispatch = new Dispatcher(strategy, pool, true);
         dispatch.addMessageHandler(
                 TestMessage.class,
                 m -> ((TestMessage)m).flag = true);
@@ -41,7 +62,9 @@ class DispatcherTest {
 
     @Test
     public void testMultipleMessageHandlers() {
-        Dispatcher dispatch = new Dispatcher(true);
+        IdleStrategy strategy = new SleepingIdleStrategy();
+        MessagePool pool = new MessagePool(m -> {});
+        Dispatcher dispatch = new Dispatcher(strategy, pool, true);
         dispatch.addMessageHandler(
                 TestMessage.class,
                 m -> ((TestMessage)m).value += 1);
@@ -55,7 +78,9 @@ class DispatcherTest {
 
     @Test
     public void testHasMessageHandlerThreaded() throws InterruptedException {
-        Dispatcher dispatch = new Dispatcher(false);
+        IdleStrategy strategy = new SleepingIdleStrategy();
+        MessagePool pool = new MessagePool(m -> {});
+        Dispatcher dispatch = new Dispatcher(strategy, pool, false);
         dispatch.addMessageHandler(
                 TestMessage.class,
                 m -> ((TestMessage)m).flag = true);

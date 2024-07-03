@@ -67,6 +67,7 @@ public class SmoothObjectPool<T> implements ObjectPool<T> {
 
     }
 
+    // TODO: sizefactor is off by 1!  10 should give 1024
     public SmoothObjectPool(Supplier<T> factory, int sizeFactor, int maxSizeFactor) {
         int size = 1 << sizeFactor;
         maxSize = 1 << maxSizeFactor;
